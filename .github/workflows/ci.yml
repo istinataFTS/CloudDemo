@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A second push to the same PR cancels the first run rather than queueing
+# behind it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        # Warnings become errors in CI but not on your laptop: a warning you
+        # can ignore locally is one you will ignore forever.
+        run: dotnet build --no-restore --configuration Release -warnaserror
+
+      - name: Test
+        # The integration tests from Task 11 onward start Postgres and
+        # LocalStack through Testcontainers. GitHub's ubuntu runners ship
+        # a working Docker daemon, so they need no extra services here.
+        run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+  docker:
+    runs-on: ubuntu-latest
+    # The Dockerfile arrives in Task 1. Until then this job has nothing to
+    # build, so it skips itself rather than failing red.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Does a Dockerfile exist yet?
+        id: check
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No Dockerfile yet — skipping. This starts working at Task 1."
+          fi
+
+      - name: Build the image
+        if: steps.check.outputs.exists == 'true'
+        run: docker build -t garage:ci .
+
+      - name: Refuse to run as root
+        if: steps.check.outputs.exists == 'true'
+        # Contract item 1. A container running as root is the single most
+        # common finding in a container security review, and it is much
+        # cheaper to catch here than in Phase 4.
+        run: |
+          uid=$(docker run --rm --entrypoint id garage:ci -u)
+          echo "container uid: $uid"
+          if [ "$uid" = "0" ]; then
+            echo "::error::The image runs as root."
+            exit 1
+          fi
