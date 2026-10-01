@@ -1,0 +1,44 @@
+@page "{username?}"
+@using Garage.Mockup
+@model ProfileModel
+@{
+    ViewData["Title"] = Model.Profile.DisplayName;
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+
+        <div class="alert alert-warning py-2 small">
+            Mockup &mdash; hardcoded data, no login yet. Replaced at Task 6.
+        </div>
+
+        <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:72px;height:72px;font-size:1.4rem;font-weight:600;">
+                @SampleData.Initials(Model.Profile.DisplayName)
+            </div>
+            <div class="ms-3">
+                <h1 class="h4 mb-0">@Model.Profile.DisplayName</h1>
+                <div class="text-muted">&#64;@Model.Profile.Username</div>
+            </div>
+        </div>
+
+        <p class="mb-2">@Model.Profile.Bio</p>
+
+        <p class="text-muted small border-bottom pb-3 mb-3">
+            @Model.Posts.Count @(Model.Posts.Count == 1 ? "post" : "posts")
+            &middot; joined @Model.Profile.JoinedAt.ToString("MMMM yyyy")
+        </p>
+
+        @if (Model.Posts.Count == 0)
+        {
+            <p class="text-muted">Nothing posted yet.</p>
+        }
+
+        @foreach (var post in Model.Posts)
+        {
+            <partial name="_Post" model="post" />
+        }
+
+    </div>
+</div>
