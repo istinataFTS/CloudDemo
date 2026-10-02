@@ -90,6 +90,9 @@
                     cell(r.status),
                     cell(r.attempts),
                     cell(r.errorMessage ?? ""));
+                if (r.status === "Failed") {
+                    tr.style.background = "#fee";
+                }
                 return tr;
             });
 
