@@ -1,0 +1,41 @@
+@using Garage.Mockup
+@model SamplePost
+
+<article class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+            <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:40px;height:40px;font-size:0.85rem;font-weight:600;">
+                @SampleData.Initials(Model.DisplayName)
+            </div>
+            <div class="ms-2 lh-sm">
+                <a class="fw-semibold text-dark text-decoration-none"
+                   asp-page="/Profile" asp-route-username="@Model.Username">@Model.DisplayName</a>
+                <div class="text-muted small">
+                    &#64;@Model.Username &middot; @SampleData.Relative(Model.PostedAt)
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Body))
+        {
+            <p class="mb-0">@Model.Body</p>
+        }
+    </div>
+
+    @if (Model.Photo is not null)
+    {
+        @if (Model.Photo.Status == "ready")
+        {
+            <div style="background:@Model.Photo.Gradient;aspect-ratio:3/2;"></div>
+        }
+        else
+        {
+            <div class="d-flex flex-column align-items-center justify-content-center text-muted bg-light border-top border-bottom"
+                 style="aspect-ratio:3/2;">
+                <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+                <small>processing</small>
+            </div>
+        }
+    }
+</article>
