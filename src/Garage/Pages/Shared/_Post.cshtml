@@ -1,5 +1,7 @@
 @model Garage.Data.Entities.Post
+@using Garage.Data.Entities
 @using Garage.Feed
+@inject Garage.Media.PresignService Presign
 
 @* One post card, drawn the same way in the feed, on a profile and on its
    own page. The design is the mockup's; only the data behind it changed. *@
@@ -24,4 +26,24 @@
            post: a body of <script> would run in every reader's browser. *@
         <p class="mb-0" style="white-space: pre-wrap">@Model.Body</p>
     </div>
+
+    @* Only queued, processing and ready photos are loaded (see PostPage).
+       A ready one is a signed GET link that works for an hour — the bucket
+       stays private, and signing is arithmetic, nothing is sent to S3. *@
+    @foreach (var photo in Model.Photos)
+    {
+        if (photo.Status == PhotoStatus.Ready)
+        {
+            <img src="@Presign.CreateDownloadUrl(photo.S3KeyDisplay!, TimeSpan.FromHours(1))"
+                 alt="Photo by &#64;@Model.Author.UserName" loading="lazy" class="d-block w-100" />
+        }
+        else
+        {
+            <div class="d-flex flex-column align-items-center justify-content-center text-muted bg-light border-top border-bottom"
+                 style="aspect-ratio:3/2;">
+                <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+                <small>processing</small>
+            </div>
+        }
+    }
 </article>

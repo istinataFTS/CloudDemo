@@ -25,7 +25,7 @@ public static class WorkerHost
         });
 
         builder.Services.AddGarageCore(builder.Configuration);
-        builder.Services.AddScoped<IPhotoProcessor, LoggingPhotoProcessor>();
+        builder.Services.AddScoped<IPhotoProcessor, PhotoProcessor>();
         builder.Services.AddHostedService<PhotoWorker>();
 
         var host = builder.Build();
