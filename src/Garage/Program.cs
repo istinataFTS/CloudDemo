@@ -9,7 +9,8 @@ switch (role)
         break;
 
     case "worker":
-        throw new NotImplementedException("The worker role arrives in Task 9.");
+        await WorkerHost.RunAsync(args);
+        break;
 
     default:
         throw new InvalidOperationException(
