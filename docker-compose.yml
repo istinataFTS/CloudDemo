@@ -72,5 +72,25 @@ services:
       init:
         condition: service_completed_successfully
 
+  worker:
+    build: .
+    environment:
+      ROLE: worker
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=garage;Username=garage;Password=garage"
+      AWS__Region: "eu-central-1"
+      AWS__BucketName: "garage-local-media"
+      AWS__QueueUrl: "http://localstack:4566/000000000000/garage-photos"
+      AWS__ServiceUrl: "http://localstack:4566"
+      AWS__ForcePathStyle: "true"
+      AWS_ACCESS_KEY_ID: "test"
+      AWS_SECRET_ACCESS_KEY: "test"
+      AWS_REGION: "eu-central-1"
+    depends_on:
+      db:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:
