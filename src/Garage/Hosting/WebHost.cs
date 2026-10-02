@@ -1,3 +1,6 @@
+using Garage.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace Garage.Hosting;
 
 public static class WebHost
@@ -9,8 +12,17 @@ public static class WebHost
         builder.Services.Configure<HostOptions>(options =>
             options.ShutdownTimeout = TimeSpan.FromSeconds(25));
 
+        var connectionString = builder.Configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException(
+                "ConnectionStrings__Default is not set.");
+
+        builder.Services.AddDbContext<GarageDbContext>(options =>
+            options.UseNpgsql(connectionString)
+                   .UseSnakeCaseNamingConvention());
+
         builder.Services.AddRazorPages();
-        builder.Services.AddHealthChecks();
+        builder.Services.AddHealthChecks()
+            .AddNpgSql(connectionString, name: "postgres", tags: ["ready"]);
 
         var app = builder.Build();
 
@@ -28,6 +40,13 @@ public static class WebHost
         app.MapHealthChecks("/health/live", new()
         {
             Predicate = _ => false
+        });
+
+        // Readiness includes the database. The load balancer uses this to
+        // decide whether to send traffic here — not whether to kill it.
+        app.MapHealthChecks("/health/ready", new()
+        {
+            Predicate = check => check.Tags.Contains("ready")
         });
 
         app.MapRazorPages();
