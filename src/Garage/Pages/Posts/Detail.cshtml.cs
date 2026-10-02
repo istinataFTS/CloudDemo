@@ -22,6 +22,11 @@ public class DetailModel(GarageDbContext db, UserManager<GarageUser> users) : Pa
     {
         var post = await db.Posts
             .Include(p => p.Author)
+            .Include(p => p.Photos
+                .Where(photo => photo.Status == PhotoStatus.Queued
+                             || photo.Status == PhotoStatus.Processing
+                             || photo.Status == PhotoStatus.Ready)
+                .OrderBy(photo => photo.CreatedAt))
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id);
 

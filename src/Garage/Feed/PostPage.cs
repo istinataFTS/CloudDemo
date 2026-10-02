@@ -25,6 +25,14 @@ public sealed class PostPage
 
         var rows = await posts
             .Include(p => p.Author)
+            // Ready photos, and the ones on their way — the card shows those
+            // as "processing". Not a row still waiting for its upload (the
+            // tab may have closed) and not one that failed.
+            .Include(p => p.Photos
+                .Where(photo => photo.Status == PhotoStatus.Queued
+                             || photo.Status == PhotoStatus.Processing
+                             || photo.Status == PhotoStatus.Ready)
+                .OrderBy(photo => photo.CreatedAt))
             // Id breaks ties. Two posts in the same microsecond must not
             // swap places between page 1 and page 2, or one is shown twice
             // and the other never.

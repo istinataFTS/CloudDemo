@@ -4,7 +4,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Garage.Tests;
 
-public sealed class GarageAppFactory(string connectionString)
+/// <param name="aws">
+/// Leave it out for tests that only presign. Pass it when the test needs
+/// the web app to really talk to S3 — deleting a post deletes its objects.
+/// </param>
+public sealed class GarageAppFactory(string connectionString, AwsFixture? aws = null)
     : WebApplicationFactory<Program>
 {
     public const string Password = "TestPassword123";
@@ -21,6 +25,14 @@ public sealed class GarageAppFactory(string connectionString)
         builder.UseSetting("AWS:BucketName", "garage-test");
         Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
         Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
+
+        if (aws is not null)
+        {
+            builder.UseSetting("AWS:Region", AwsFixture.Region);
+            builder.UseSetting("AWS:BucketName", AwsFixture.BucketName);
+            builder.UseSetting("AWS:ServiceUrl", aws.ServiceUrl);
+            builder.UseSetting("AWS:ForcePathStyle", "true");
+        }
     }
 
     /// <summary>
