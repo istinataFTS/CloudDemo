@@ -55,4 +55,29 @@ public sealed class GarageAppFactory(string connectionString)
 
         return (client, username);
     }
+
+    /// <summary>
+    /// Writes a post through the real form as whoever the client is
+    /// logged in as, and returns its id from the redirect.
+    /// </summary>
+    public static async Task<Guid> WritePostAsync(HttpClient client, string body)
+    {
+        var page = await client.GetAsync("/posts/new");
+        page.EnsureSuccessStatusCode();
+
+        var response = await client.PostAsync("/posts/new",
+            await TestForms.FromAsync(page, new Dictionary<string, string>
+            {
+                ["Input.Body"] = body
+            }));
+
+        if (response.StatusCode != HttpStatusCode.Found)
+        {
+            throw new InvalidOperationException(
+                $"Posting did not redirect; got {(int)response.StatusCode}.");
+        }
+
+        // Location is /posts/{id}.
+        return Guid.Parse(response.Headers.Location!.OriginalString["/posts/".Length..]);
+    }
 }
