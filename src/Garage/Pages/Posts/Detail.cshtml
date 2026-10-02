@@ -11,4 +11,92 @@
     <form method="post" asp-page="/Posts/Delete" asp-route-id="@Model.Post.Id">
         <button type="submit">Delete post</button>
     </form>
+
+    <h2>Photos</h2>
+
+    <input type="file" id="photo-input" multiple
+           accept="image/jpeg,image/png,image/webp" />
+    <button type="button" id="upload-button">Upload</button>
+
+    <p id="upload-log"></p>
+
+    <table>
+        <thead><tr><th>Photo</th><th>Status</th><th>Attempts</th><th>Error</th></tr></thead>
+        <tbody id="photo-rows"></tbody>
+    </table>
+
+    <script>
+        const postId = "@Model.Post.Id";
+        const log = document.getElementById("upload-log");
+
+        async function uploadOne(file) {
+            // 1. ask our own server for a signed URL
+            const presign = await fetch(`/posts/${postId}/photos`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contentType: file.type })
+            });
+
+            if (!presign.ok) {
+                log.textContent = `${file.name}: rejected (${presign.status})`;
+                return;
+            }
+
+            const { photoId, uploadUrl } = await presign.json();
+
+            // 2. send the bytes straight to S3. Our server never sees them.
+            //    The Content-Type must match what was signed, exactly.
+            const put = await fetch(uploadUrl, {
+                method: "PUT",
+                headers: { "Content-Type": file.type },
+                body: file
+            });
+
+            if (!put.ok) {
+                log.textContent = `${file.name}: S3 refused the upload (${put.status})`;
+                return;
+            }
+
+            // 3. tell our server the upload finished. Best effort — if this
+            //    call never happens, the worker still processes the photo.
+            await fetch(`/photos/${photoId}/uploaded`, { method: "POST" });
+
+            log.textContent = `${file.name}: uploaded`;
+        }
+
+        document.getElementById("upload-button").addEventListener("click", async () => {
+            const files = document.getElementById("photo-input").files;
+            for (const file of files) {
+                await uploadOne(file);
+            }
+        });
+
+        // textContent, never innerHTML: an error message is text from
+        // somewhere else, and innerHTML would run any markup inside it.
+        function cell(text) {
+            const td = document.createElement("td");
+            td.textContent = text;
+            return td;
+        }
+
+        async function refreshStatus() {
+            const response = await fetch(`/posts/${postId}/photos/status`);
+            if (!response.ok) { return; }
+
+            const rows = (await response.json()).map(r => {
+                const tr = document.createElement("tr");
+                tr.append(
+                    cell(r.id.substring(0, 8)),
+                    cell(r.status),
+                    cell(r.attempts),
+                    cell(r.errorMessage ?? ""));
+                return tr;
+            });
+
+            document.getElementById("photo-rows").replaceChildren(...rows);
+        }
+
+        refreshStatus();
+        setInterval(refreshStatus, 2000);
+    </script>
 }

@@ -12,6 +12,15 @@ public sealed class GarageAppFactory(string connectionString)
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", connectionString);
+
+        // Signing a URL is pure arithmetic — nothing is sent to AWS — so a
+        // made-up bucket is fine for every test that only presigns. It
+        // still needs *some* credentials to sign with, and the SDK reads
+        // them from the environment, exactly as in docker-compose.yml.
+        builder.UseSetting("AWS:Region", "eu-central-1");
+        builder.UseSetting("AWS:BucketName", "garage-test");
+        Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "test");
+        Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "test");
     }
 
     /// <summary>
