@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Amazon.S3.Model;
+using Amazon.SQS.Model;
 using Garage.Data;
 using Garage.Data.Entities;
 using Garage.Media;
@@ -146,5 +147,43 @@ public sealed class PhotoTestHelpers(PostgresFixture postgres, AwsFixture aws)
 
         // The SDK leaves S3Objects null, not empty, when nothing matches.
         return response.S3Objects?.Select(o => o.Key).ToList() ?? [];
+    }
+
+    /// <summary>
+    /// How many messages on the dead-letter queue are about this key.
+    /// Counting only this test's key keeps tests that share the fixture's
+    /// one DLQ from seeing each other's leftovers.
+    /// </summary>
+    public async Task<int> DeadLettersMentioningAsync(string key)
+    {
+        var response = await aws.Sqs.ReceiveMessageAsync(new ReceiveMessageRequest
+        {
+            QueueUrl = aws.DlqUrl,
+            MaxNumberOfMessages = 10,
+
+            // Zero: look without taking. The messages stay visible.
+            VisibilityTimeout = 0
+        });
+
+        return (response.Messages ?? []).Count(m => m.Body.Contains(key));
+    }
+
+    /// <summary>Polls the DLQ until a message about this key arrives, or gives up.</summary>
+    public async Task<int> WaitForDeadLetterAsync(string key, TimeSpan timeout)
+    {
+        var deadline = DateTimeOffset.UtcNow + timeout;
+
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var count = await DeadLettersMentioningAsync(key);
+            if (count > 0)
+            {
+                return count;
+            }
+
+            await Task.Delay(1000);
+        }
+
+        return 0;
     }
 }
