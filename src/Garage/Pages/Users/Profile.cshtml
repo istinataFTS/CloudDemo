@@ -1,0 +1,29 @@
+@page "/u/{username}"
+@model Garage.Pages.Users.ProfileModel
+@using Garage.Feed
+@{
+    ViewData["Title"] = Model.Owner.DisplayName;
+}
+
+<div class="d-flex align-items-center mb-3">
+    <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0"
+         style="width:72px;height:72px;font-size:1.4rem;font-weight:600;">
+        @PostDisplay.Initials(Model.Owner.DisplayName)
+    </div>
+    <div class="ms-3">
+        <h1 class="h4 mb-0">@Model.Owner.DisplayName</h1>
+        <div class="text-muted">&#64;@Model.Owner.UserName</div>
+    </div>
+</div>
+
+@if (Model.Owner.Bio is not null)
+{
+    <p class="mb-2" style="white-space: pre-wrap">@Model.Owner.Bio</p>
+}
+
+<p class="text-muted small border-bottom pb-3 mb-3">
+    @Model.PostCount @(Model.PostCount == 1 ? "post" : "posts")
+    &middot; joined @Model.Owner.CreatedAt.ToString("MMMM yyyy")
+</p>
+
+<partial name="_PostList" model="Model.Posts" />

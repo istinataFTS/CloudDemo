@@ -5,3 +5,10 @@
 }
 
 <partial name="_Post" model="Model.Post" />
+
+@if (Model.IsMine)
+{
+    <form method="post" asp-page="/Posts/Delete" asp-route-id="@Model.Post.Id">
+        <button type="submit">Delete post</button>
+    </form>
+}
