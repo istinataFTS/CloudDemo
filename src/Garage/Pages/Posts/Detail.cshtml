@@ -4,9 +4,4 @@
     ViewData["Title"] = Model.Post.Author!.DisplayName;
 }
 
-@* Plain for now. Task 5 swaps this for the shared post card. *@
-<p><strong>@Model.Post.Author.DisplayName</strong> &#64;@Model.Post.Author.UserName</p>
-
-@* Razor HTML-encodes everything written with @. Never Html.Raw a
-   post: a body of <script> would run in every reader's browser. *@
-<p style="white-space: pre-wrap">@Model.Post.Body</p>
+<partial name="_Post" model="Model.Post" />
