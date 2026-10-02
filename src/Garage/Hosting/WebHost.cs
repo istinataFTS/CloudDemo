@@ -1,8 +1,8 @@
+using Garage.Endpoints;
 using Garage.Data;
 using Garage.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace Garage.Hosting;
 
@@ -15,13 +15,7 @@ public static class WebHost
         builder.Services.Configure<HostOptions>(options =>
             options.ShutdownTimeout = TimeSpan.FromSeconds(25));
 
-        var connectionString = builder.Configuration.GetConnectionString("Default")
-            ?? throw new InvalidOperationException(
-                "ConnectionStrings__Default is not set.");
-
-        builder.Services.AddDbContext<GarageDbContext>(options =>
-            options.UseNpgsql(connectionString)
-                   .UseSnakeCaseNamingConvention());
+        builder.Services.AddGarageCore(builder.Configuration);
 
         builder.Services.AddRazorPages(options =>
         {
@@ -83,6 +77,7 @@ public static class WebHost
                 .Build();
         });
 
+        var connectionString = builder.Configuration.GetConnectionString("Default")!;
         builder.Services.AddHealthChecks()
             .AddNpgSql(connectionString, name: "postgres", tags: ["ready"]);
 
@@ -119,6 +114,7 @@ public static class WebHost
         }).AllowAnonymous();
 
         app.MapRazorPages();
+        app.MapPhotoEndpoints();
 
         await app.RunAsync();
     }
