@@ -1,33 +1,41 @@
-@using Garage.Mockup
-@model SamplePost
+@model Garage.Data.Entities.Post
+@using Garage.Data.Entities
+@using Garage.Feed
+@inject Garage.Media.PresignService Presign
 
+@* One post card, drawn the same way in the feed, on a profile and on its
+   own page. The design is the mockup's; only the data behind it changed. *@
 <article class="card border-0 shadow-sm mb-3">
     <div class="card-body">
         <div class="d-flex align-items-center mb-2">
             <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0"
                  style="width:40px;height:40px;font-size:0.85rem;font-weight:600;">
-                @SampleData.Initials(Model.DisplayName)
+                @PostDisplay.Initials(Model.Author!.DisplayName)
             </div>
             <div class="ms-2 lh-sm">
                 <a class="fw-semibold text-dark text-decoration-none"
-                   asp-page="/Profile" asp-route-username="@Model.Username">@Model.DisplayName</a>
+                   href="/u/@Model.Author.UserName">@Model.Author.DisplayName</a>
                 <div class="text-muted small">
-                    &#64;@Model.Username &middot; @SampleData.Relative(Model.PostedAt)
+                    &#64;@Model.Author.UserName &middot;
+                    <a class="text-muted" href="/posts/@Model.Id">@PostDisplay.Relative(Model.CreatedAt, DateTimeOffset.UtcNow)</a>
                 </div>
             </div>
         </div>
 
-        @if (!string.IsNullOrWhiteSpace(Model.Body))
-        {
-            <p class="mb-0">@Model.Body</p>
-        }
+        @* Razor HTML-encodes everything written with @. Never Html.Raw a
+           post: a body of <script> would run in every reader's browser. *@
+        <p class="mb-0" style="white-space: pre-wrap">@Model.Body</p>
     </div>
 
-    @if (Model.Photo is not null)
+    @* Only queued, processing and ready photos are loaded (see PostPage).
+       A ready one is a signed GET link that works for an hour — the bucket
+       stays private, and signing is arithmetic, nothing is sent to S3. *@
+    @foreach (var photo in Model.Photos)
     {
-        @if (Model.Photo.Status == "ready")
+        if (photo.Status == PhotoStatus.Ready)
         {
-            <div style="background:@Model.Photo.Gradient;aspect-ratio:3/2;"></div>
+            <img src="@Presign.CreateDownloadUrl(photo.S3KeyDisplay!, TimeSpan.FromHours(1))"
+                 alt="Photo by &#64;@Model.Author.UserName" loading="lazy" class="d-block w-100" />
         }
         else
         {

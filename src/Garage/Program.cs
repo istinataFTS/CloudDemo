@@ -1,26 +1,21 @@
-var builder = WebApplication.CreateBuilder(args);
+using Garage.Hosting;
 
-// Add services to the container.
-builder.Services.AddRazorPages();
+var role = Environment.GetEnvironmentVariable("ROLE") ?? "web";
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+switch (role)
 {
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    case "web":
+        await WebHost.RunAsync(args);
+        break;
+
+    case "worker":
+        await WorkerHost.RunAsync(args);
+        break;
+
+    default:
+        throw new InvalidOperationException(
+            $"ROLE must be 'web' or 'worker', not '{role}'.");
 }
 
-app.UseHttpsRedirection();
-
-app.UseRouting();
-
-app.UseAuthorization();
-
-app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
-
-app.Run();
+// Named so WebApplicationFactory<Program> can find the entry point from tests.
+public partial class Program;

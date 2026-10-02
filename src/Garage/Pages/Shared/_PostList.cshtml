@@ -1,0 +1,24 @@
+@model Garage.Feed.PostPage
+
+@if (Model.Posts.Count == 0)
+{
+    <p>Nothing here yet.</p>
+}
+
+@foreach (var post in Model.Posts)
+{
+    <partial name="_Post" model="post" />
+}
+
+<nav class="d-flex gap-3 py-3">
+    @* "?page=2" with no path keeps you on the page you are on, so the
+       same links work on the feed and on any profile. *@
+    @if (Model.HasPrevious)
+    {
+        <a href="?page=@(Model.Number - 1)">Newer</a>
+    }
+    @if (Model.HasNext)
+    {
+        <a href="?page=@(Model.Number + 1)">Older</a>
+    }
+</nav>
